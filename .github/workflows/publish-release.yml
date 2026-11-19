@@ -24,4 +24,4 @@ jobs:
           MP4=$(find out -name 'teror-fm-ep01.mp4' | head -n 1)
           echo "MP4: $MP4"
           ls -la out/
-          gh release create ep01-v1 "$MP4" --title "TEROR FM EP01 — Kuburan Kosong" --notes "Render otomatis dari GitHub Actions."
+          gh release create ep01-v1 "$MP4" --repo karismaroufunabidin-pixel/teror-fm --title "TEROR FM EP01 — Kuburan Kosong" --notes "Render otomatis dari GitHub Actions."
