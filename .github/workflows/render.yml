@@ -1,0 +1,58 @@
+# Render TEROR FM EP01 di GitHub Actions (gratis)
+#
+# Cara pakai:
+# - Otomatis jalan setiap ada push ke branch main.
+# - Atau manual: tab Actions di repo, pilih workflow "Render TEROR FM EP01",
+#   klik "Run workflow".
+# - Hasil MP4 diumumkan sebagai GitHub Release (tag ep01-v1) dan juga
+#   tersimpan sebagai Artifact di halaman run itu.
+#
+# Kenapa gratis: repo public dapat runner standar gratis tanpa batas
+# (4 vCPU, 16 GB RAM). Satu job dibatasi 6 jam.
+# Render memakai --concurrency=2 dan --disallow-parallel-encoding
+# supaya hemat memori.
+#
+# Voiceover MP3 diunduh dari Google Drive saat render berjalan
+# (folder voiceover dibagikan "anyone with the link", read-only),
+# karena file MP3 tidak bisa di-push lewat GitHub API.
+
+name: Render TEROR FM EP01
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Download voiceover MP3s from Drive
+        run: |
+          pip install --quiet gdown
+          gdown --folder "https://drive.google.com/drive/folders/1a9yU8PTj1sHWPiVCeob1NwiIfV08NUCs" -O /tmp/voiceover
+          mkdir -p public/voiceover
+          find /tmp/voiceover -name '*.mp3' -exec cp {} public/voiceover/ \;
+          echo "MP3 count: $(ls public/voiceover | wc -l)"
+          test "$(ls public/voiceover | wc -l)" = "41"
+
+      - run: npx remotion render src/index.ts TerorFM out/teror-fm-ep01.mp4 --concurrency=2 --disallow-parallel-encoding
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: teror-fm-ep01
+          path: out/teror-fm-ep01.mp4
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ep01-v1 out/teror-fm-ep01.mp4 --title "TEROR FM EP01 — Kuburan Kosong" --notes "Render otomatis dari GitHub Actions." || gh release upload ep01-v1 out/teror-fm-ep01.mp4 --clobber
