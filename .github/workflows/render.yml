@@ -18,6 +18,9 @@
 
 name: Render TEROR FM EP01
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main]
