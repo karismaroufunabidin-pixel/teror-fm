@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {useThree} from '@react-three/fiber';
 import {Easing, interpolate, random, useCurrentFrame} from 'remotion';
 import {Box, Blocks, jitter, type BlockItem} from './Voxel';
-import {BLACKOUT_START, TURN_LARAS, TURN_WINDU, getCamera, getShot, isPov, lightLevel, mouthOpen, type V3} from './shots';
+import {BLACKOUT_START, TURN_LARAS, TURN_WINDU, getCamera, getShot, isPov, isPovDay, lightLevel, mouthOpen, povScene, type V3} from './shots';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
@@ -113,7 +113,7 @@ const Room: React.FC = () => {
 const BoothWindow: React.FC = () => {
   const frame = useCurrentFrame();
   const lv = lightLevel(frame);
-  const glowOn = frame >= 264 && frame < 440 ? 1 : 0.18;
+  const glowOn = frame >= 2870 && frame < 3515 ? 1 : 0.18;
   const flick = 0.75 + 0.25 * random(`booth-${Math.floor(frame / 2)}`);
   const glow = glowOn * flick * (0.35 + 0.65 * lv);
   return (
@@ -281,7 +281,7 @@ const CLOCK_DIGITS: Record<string, string[]> = {
 
 const Laptop: React.FC = () => {
   const frame = useCurrentFrame();
-  const portalActive = frame >= 3394 && frame < 5310;
+  const portalActive = frame >= 3515 && frame < 6240;
   const clockOn = frame >= BLACKOUT_START;
   const glow = portalActive ? 1.8 : clockOn ? 1.2 : 0.1;
   const chars = ['1', '2', ':', '0', '1'];
@@ -379,8 +379,8 @@ const Host: React.FC<{role: 'A' | 'B'}> = ({role}) => {
   // Windu: mata melebar saat nisan Andi disebut (2776-2968) dan saat telepon putus.
   // Laras: jarang takut — hanya melebar 1.3x saat jam 12:01 terlihat.
   const widen = isA
-    ? interpolate(frame, [2776, 2830, 3421, 3520, 5592, 5647], [1, 1.75, 1.75, 1, 1, 1.75], clamp)
-    : interpolate(frame, [5647, 5700], [1, 1.3], clamp);
+    ? interpolate(frame, [3089, 3140, 3515, 3600, 6432, 6579], [1, 1.75, 1.75, 1, 1, 1.75], clamp)
+    : interpolate(frame, [6579, 6639], [1, 1.3], clamp);
   const pupil = 1 - 0.5 * ((widen - 1) / 0.75);
   const blink = widen < 1.3 && (frame + (isA ? 0 : 41)) % 97 < 3 ? 0.12 : 1;
   const breath = 1 + Math.sin(frame * 0.1 + (isA ? 0 : 1)) * 0.012;
@@ -505,10 +505,10 @@ const Listener: React.FC<{eyeGlow?: number}> = ({eyeGlow = 1}) => {
 
 const FigureInWindow: React.FC = () => {
   const frame = useCurrentFrame();
-  if (frame < 2900 || frame >= 3394) return null;
-  const fx = interpolate(frame, [2900, 3300], [-9.4, -7.55], {...clamp, easing: Easing.out(Easing.quad)});
+  if (frame < 2870 || frame >= 3515) return null;
+  const fx = interpolate(frame, [2870, 3300], [-9.4, -7.55], {...clamp, easing: Easing.out(Easing.quad)});
   return (
-    <group position={[fx, 0, interpolate(frame, [3150, 3350], [0, 0.45], clamp)]} rotation={[0, Math.PI / 2, 0]}>
+    <group position={[fx, 0, interpolate(frame, [3100, 3400], [0, 0.45], clamp)]} rotation={[0, Math.PI / 2, 0]}>
       <Listener />
     </group>
   );
@@ -528,8 +528,10 @@ const FigureInRoom: React.FC = () => null;
 
 const PovScene: React.FC = () => {
   const frame = useCurrentFrame();
-  const inP2a = frame >= 3454 && frame < 3741;
-  const inP2c = frame >= 4429 && frame < 5250;
+  const scene = povScene(frame);
+  const inP2a = scene === 'p2a';
+  const inP2b = scene === 'p2b';
+  const inP2c = scene === 'p2c';
   const houseZ = [4.5, 1.5, -1.5];
   return (
     <group>
@@ -543,6 +545,9 @@ const PovScene: React.FC = () => {
             <Box pos={[hx, 1.0, hz]} size={[2.2, 2.0, 2.2]} color="#2a2433" />
             <Box pos={[hx, 2.15, hz]} size={[2.5, 0.3, 2.5]} color="#17131d" />
             <Box pos={[hx * 0.82, 1.2, hz]} size={[0.5, 0.5, 0.06]} color="#05060a" cast={false} />
+            {/* pintu kebuka (P2b): daun pintu terbuka ke luar, dalam gelap */}
+            <Box pos={[hx * 0.55, 0.9, hz + 1.15]} size={[0.7, 1.8, 0.08]} color="#05060a" cast={false} />
+            <Box pos={[hx * 0.55 + 0.45, 0.9, hz + 1.5]} size={[0.08, 1.8, 0.6]} color="#1c1410" rot={[0, 0.7, 0]} />
             {/* nisan kosong di depan tiap rumah */}
             <Box pos={[hx * 0.62, 0.35, hz + 1.4]} size={[0.42, 0.7, 0.14]} color="#5a5f68" />
             <Box pos={[hx * 0.62, 0.75, hz + 1.4]} size={[0.5, 0.12, 0.18]} color="#4a4f58" />
@@ -558,6 +563,33 @@ const PovScene: React.FC = () => {
           </group>
         )),
       )}
+      {/* gerbang kuburan: dua tiang + balok atas, sosok hilang begitu Andi lewat gerbang */}
+      <Box pos={[-1.3, 1.1, -6.2]} size={[0.3, 2.2, 0.3]} color="#3a3f48" />
+      <Box pos={[1.3, 1.1, -6.2]} size={[0.3, 2.2, 0.3]} color="#3a3f48" />
+      <Box pos={[0, 2.3, -6.2]} size={[2.9, 0.25, 0.25]} color="#3a3f48" />
+      {/* pagar kuburan di depan barisan nisan */}
+      {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((fx) => (
+        <Box key={fx} pos={[fx, 0.5, -3.6]} size={[0.12, 1.0, 0.12]} color="#2e2a24" />
+      ))}
+      <Box pos={[0, 0.85, -3.6]} size={[8.4, 0.08, 0.08]} color="#2e2a24" />
+      {/* pohon-pohon kuburan / kampung */}
+      {([-5.5, 5.5] as number[]).flatMap((tx) =>
+        ([-5, 2] as number[]).map((tz) => (
+          <group key={`${tx}-${tz}`}>
+            <Box pos={[tx, 1.0, tz]} size={[0.35, 2.0, 0.35]} color="#241812" />
+            <Box pos={[tx, 2.6, tz]} size={[1.6, 1.4, 1.6]} color="#16241a" />
+            <Box pos={[tx, 3.4, tz]} size={[1.0, 0.8, 1.0]} color="#1b2f20" />
+          </group>
+        )),
+      )}
+      {/* lampu jalan kampung — mati di P2b (tidak ada lampu nyala), bulan di P2c */}
+      {([-2.8, 2.8] as number[]).map((lx) => (
+        <group key={lx}>
+          <Box pos={[lx, 1.4, 0.5]} size={[0.12, 2.8, 0.12]} color="#1c1e22" />
+          <Box pos={[lx, 2.9, 0.5]} size={[0.4, 0.2, 0.4]} color="#0a0a0c" />
+        </group>
+      ))}
+      <Box pos={[-4, 6.5, -8]} size={[0.9, 0.9, 0.1]} color="#dfe8ff" emissive="#cfe0ff" ei={1.6} basic fog={false} cast={false} />
       {/* nisan Andi yang disorot lampu motor */}
       <Box pos={[1, 0.45, -4.6]} size={[0.55, 0.9, 0.16]} color="#9aa0aa" />
       {/* gundukan galian + lubang kosong */}
@@ -573,16 +605,31 @@ const PovScene: React.FC = () => {
       {/* sekop bersandar di gundukan */}
       <Box pos={[0.9, 0.5, -2.0]} size={[0.06, 1.0, 0.06]} color="#4a3427" rot={[0, 0, 0.35]} />
       <Box pos={[1.05, 0.95, -2.0]} size={[0.22, 0.3, 0.04]} color="#6a6f78" rot={[0, 0, 0.35]} />
-      {/* motor Andi: setang + lampu depan */}
-      <group position={[0, 0, 4.4]}>
+      {/* motor Andi: setang + lampu depan — hanya P2a (di P2b/P2c Andi jalan kaki) */}
+      {inP2a && (
+      <group position={[0, 0, 2.0]}>
         <Box pos={[-0.35, 1.05, 0]} size={[0.7, 0.06, 0.06]} color="#0b0b0d" />
         <Box pos={[0, 0.55, -0.3]} size={[0.5, 0.7, 1.1]} color="#1d4a22" />
         <Box pos={[0, 0.75, -0.85]} size={[0.3, 0.2, 0.06]} color="#ffe9b0" emissive="#ffdf8a" ei={2.5} cast={false} />
         <Box pos={[0, 0.25, 0.3]} size={[0.4, 0.5, 0.4]} color="#0b0b0d" />
       </group>
-      {/* sosok tanpa wajah: di belakang motor (P2a, terlihat di spion) */}
+      )}
+      {/* Andi di atas motor (P2a, orang ketiga dekat): jaket ojol hijau redup + helm */}
       {inP2a && (
-        <group position={[0.9, 0, 3.1]} rotation={[0, 0, 0]}>
+        <group position={[0, 0, 2.0]}>
+          <Box pos={[0, 1.25, 0.35]} size={[0.55, 0.6, 0.3]} color="#1d4a22" />
+          <Box pos={[0, 1.75, 0.35]} size={[0.4, 0.4, 0.4]} color="#22242a" />
+          <Box pos={[0, 1.75, 0.14]} size={[0.34, 0.12, 0.06]} color="#0a0a0c" cast={false} />
+          <Box pos={[-0.32, 1.3, 0.35]} size={[0.14, 0.5, 0.14]} color="#1d4a22" />
+          <Box pos={[0.32, 1.3, 0.35]} size={[0.14, 0.5, 0.14]} color="#1d4a22" />
+        </group>
+      )}
+      {/* sosok tanpa wajah: duduk di belakang Andi di motor (P2a).
+          Terlihat selama Andi di dalam kuburan, hilang begitu dia lewat gerbang
+          (frame >= 4100). Ini visualisasi spion: dari sudut orang ketiga dekat,
+          penumpang itu terlihat di belakang pengendara. */}
+      {inP2a && frame < 4100 && (
+        <group position={[0.9, 0.75, 2.85]} scale={[0.42, 0.42, 0.42]} rotation={[0, 0, 0]}>
           <Listener />
         </group>
       )}
@@ -598,6 +645,7 @@ const PovScene: React.FC = () => {
 
 const PovLights: React.FC = () => {
   const frame = useCurrentFrame();
+  const day = isPovDay(frame);
   const flick = 0.85 + 0.15 * random(`pov-${Math.floor(frame / 2)}`);
   const target = useMemo(() => {
     const o = new THREE.Object3D();
@@ -606,23 +654,28 @@ const PovLights: React.FC = () => {
   }, []);
   return (
     <group>
-      <ambientLight color="#1a2030" intensity={0.5} />
-      <hemisphereLight args={['#232c44', '#120a08', 0.45]} />
+      <ambientLight color={day ? '#aab4c4' : '#1a2030'} intensity={day ? 2.2 : 0.5} />
+      <hemisphereLight args={day ? ['#b8c4d8', '#5a4a34', 1.3] : ['#232c44', '#120a08', 0.45]} />
+      {day && <pointLight position={[4, 6, 2]} color="#fff2d0" intensity={100} distance={22} decay={2} />}
       {/* lampu motor: satu-satunya sumber cahaya utama di POV */}
       <primitive object={target} />
       <spotLight
-        position={[0, 1.0, 4.2]}
+        position={[0, 1.0, 2.0]}
         target={target}
         angle={0.6}
         penumbra={0.6}
-        intensity={600 * flick}
+        intensity={day ? 80 * flick : 600 * flick}
         decay={2}
         distance={18}
         color="#ffdf8a"
         castShadow
       />
-      {/* cahaya dingin redup dari langit kuburan */}
-      <pointLight position={[0, 4, -5]} color="#5a6f9a" intensity={20} distance={14} decay={2} />
+      {/* cahaya hangat dari belakang motor (P2a): pengendara + penumpang harus terbaca, bukan siluet hitam pekat */}
+      {frame >= 3575 && frame < 4283 && (
+        <pointLight position={[0, 2.8, 4.5]} color="#ffdf8a" intensity={25} distance={7} decay={2} />
+      )}
+      {/* cahaya dingin dari langit kuburan / bulan; siang hari jadi cahaya matahari redup */}
+      <pointLight position={[0, 4, -5]} color={day ? '#cfe0ff' : '#5a6f9a'} intensity={day ? 60 : 20} distance={14} decay={2} />
     </group>
   );
 };
@@ -743,8 +796,8 @@ export const Scene: React.FC = () => {
   const pov = isPov(frame);
   return (
     <>
-      <color attach="background" args={['#030409']} />
-      <fogExp2 attach="fog" args={['#04060c', pov ? 0.055 : 0.04]} />
+      <color attach="background" args={[isPovDay(frame) ? '#54647a' : '#030409']} />
+      <fogExp2 attach="fog" args={[isPovDay(frame) ? '#5a6a80' : '#04060c', pov ? (isPovDay(frame) ? 0.025 : 0.07) : 0.04]} />
       <CameraRig />
       {pov ? (
         <>

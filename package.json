@@ -1,10 +1,10 @@
 {
-  "name": "teror-fm-ep01",
+  "name": "teror-fm-ep01v2",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts TerorFM out/teror-fm-ep01.mp4",
+    "render": "remotion render src/index.ts TerorFM out/teror-fm-ep01v2.mp4",
     "still": "remotion still src/index.ts TerorFM out/cek.png --frame=60",
     "typecheck": "tsc --noEmit"
   },

@@ -76,12 +76,12 @@ export const Overlays: React.FC = () => {
       )}
 
       {/* HUD */}
-      <div style={{position: 'absolute', left: 56, top: 44, fontFamily: FONT, fontWeight: 700, color: '#e9e9ee', fontSize: 30, textShadow: pixelShadow, letterSpacing: 2}}>
+      <div style={{position: 'absolute', left: 36, top: 36, fontFamily: FONT, fontWeight: 700, color: '#e9e9ee', fontSize: 26, textShadow: pixelShadow, letterSpacing: 2}}>
         <span style={{color: '#ff2a2a', opacity: recBlink ? 1 : 0.15}}>●</span> REC {timecode}
       </div>
-      <div style={{position: 'absolute', right: 56, top: 44, fontFamily: FONT, fontWeight: 700, color: '#bfc6d6', fontSize: 28, textShadow: pixelShadow, letterSpacing: 2, textAlign: 'right', opacity: 0.9}}>
+      <div style={{position: 'absolute', right: 36, top: 36, fontFamily: FONT, fontWeight: 700, color: '#bfc6d6', fontSize: 24, textShadow: pixelShadow, letterSpacing: 2, textAlign: 'right', opacity: 0.9}}>
         TEROR FM
-        <div style={{fontSize: 18, opacity: 0.6, marginTop: 6}}>
+        <div style={{fontSize: 16, opacity: 0.6, marginTop: 6}}>
           {shot.id} · {shot.label.split(' - ')[0].split(' (')[0]}
         </div>
       </div>
@@ -93,16 +93,21 @@ export const Overlays: React.FC = () => {
             position: 'absolute',
             left: 0,
             right: 0,
-            bottom: 90,
+            bottom: 150,
             display: 'flex',
             justifyContent: 'center',
+            padding: '0 40px',
+            boxSizing: 'border-box',
           }}
         >
           <div
             style={{
               fontFamily: FONT,
               fontWeight: 700,
-              fontSize: 40,
+              fontSize: 36,
+              lineHeight: 1.35,
+              textAlign: 'center',
+              maxWidth: '88%',
               color: '#f2f2f2',
               background: 'rgba(0,0,0,0.55)',
               padding: '10px 22px',
@@ -126,8 +131,8 @@ export const Overlays: React.FC = () => {
 
       {/* judul akhir */}
       {titleOpacity > 0 && (
-        <AbsoluteFill style={{justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 150}}>
-          <div style={{fontFamily: FONT, fontWeight: 900, fontSize: 64, letterSpacing: 10, color: '#ff2a1f', opacity: titleOpacity, textShadow: '0 0 24px #ff1208, 4px 4px 0 #000'}}>
+        <AbsoluteFill style={{justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 230}}>
+          <div style={{fontFamily: FONT, fontWeight: 900, fontSize: 48, letterSpacing: 6, color: '#ff2a1f', opacity: titleOpacity, textShadow: '0 0 24px #ff1208, 4px 4px 0 #000'}}>
             SIARAN INI BELUM SELESAI
           </div>
         </AbsoluteFill>
