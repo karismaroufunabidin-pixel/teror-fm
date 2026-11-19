@@ -1,10 +1,10 @@
-# Render TEROR FM EP01 di GitHub Actions (gratis)
+# Render TEROR FM EP01v2 di GitHub Actions (gratis)
 #
 # Cara pakai:
 # - Otomatis jalan setiap ada push ke branch main.
-# - Atau manual: tab Actions di repo, pilih workflow "Render TEROR FM EP01",
+# - Atau manual: tab Actions di repo, pilih workflow "Render TEROR FM EP01v2",
 #   klik "Run workflow".
-# - Hasil MP4 diumumkan sebagai GitHub Release (tag ep01-v1) dan juga
+# - Hasil MP4 diumumkan sebagai GitHub Release (tag ep01v2-v1) dan juga
 #   tersimpan sebagai Artifact di halaman run itu.
 #
 # Kenapa gratis: repo public dapat runner standar gratis tanpa batas
@@ -16,7 +16,7 @@
 # (folder voiceover dibagikan "anyone with the link", read-only),
 # karena file MP3 tidak bisa di-push lewat GitHub API.
 
-name: Render TEROR FM EP01
+name: Render TEROR FM EP01v2
 
 permissions:
   contents: write
@@ -41,21 +41,21 @@ jobs:
       - name: Download voiceover MP3s from Drive
         run: |
           pip install --quiet gdown
-          gdown --folder "https://drive.google.com/drive/folders/1a9yU8PTj1sHWPiVCeob1NwiIfV08NUCs" -O /tmp/voiceover
+          gdown --folder "https://drive.google.com/drive/folders/1y4UyV25W6UHafkxU5WgvcBka_xXas25f" -O /tmp/voiceover
           mkdir -p public/voiceover
           find /tmp/voiceover -name '*.mp3' -exec cp {} public/voiceover/ \;
           echo "MP3 count: $(ls public/voiceover | wc -l)"
-          test "$(ls public/voiceover | wc -l)" = "41"
+          test "$(ls public/voiceover | wc -l)" = "47"
 
-      - run: npx remotion render src/index.ts TerorFM out/teror-fm-ep01.mp4 --concurrency=2 --disallow-parallel-encoding
+      - run: npx remotion render src/index.ts TerorFM out/teror-fm-ep01v2.mp4 --concurrency=2 --disallow-parallel-encoding
 
       - uses: actions/upload-artifact@v4
         with:
-          name: teror-fm-ep01
-          path: out/teror-fm-ep01.mp4
+          name: teror-fm-ep01v2
+          path: out/teror-fm-ep01v2.mp4
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ep01-v1 out/teror-fm-ep01.mp4 --title "TEROR FM EP01 — Kuburan Kosong" --notes "Render otomatis dari GitHub Actions." || gh release upload ep01-v1 out/teror-fm-ep01.mp4 --clobber
+          gh release create ep01v2-v1 out/teror-fm-ep01v2.mp4 --title "TEROR FM EP01v2 — Kuburan Kosong" --notes "Render otomatis dari GitHub Actions." || gh release upload ep01v2-v1 out/teror-fm-ep01v2.mp4 --clobber
