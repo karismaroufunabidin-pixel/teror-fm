@@ -1,4 +1,4 @@
-name: Render TEROR FM EP02
+name: Render TEROR FM EP03
 
 permissions:
   contents: write
@@ -20,24 +20,27 @@ jobs:
 
       - run: npm ci
 
-      - name: Download voiceover MP3s from Drive
+      - name: Download voiceover + SFX MP3s from Drive
         run: |
           pip install --quiet gdown
-          gdown --folder "https://drive.google.com/drive/folders/1TWuY59HnFI7UOR09rpSMOogH94aF2QjK" -O /tmp/voiceover
-          mkdir -p public/voiceover
-          find /tmp/voiceover -name '*.mp3' -exec cp {} public/voiceover/ \;
-          echo "MP3 count: $(ls public/voiceover | wc -l)"
-          test "$(ls public/voiceover | wc -l)" = "42"
+          gdown --folder "https://drive.google.com/drive/folders/1PDdvdWDKV-hz5NtsG47_RfFVCKH2lvjy" -O /tmp/ep03
+          mkdir -p public/voiceover public/sfx
+          find /tmp/ep03 -name 'ep03_*.mp3' -exec cp {} public/voiceover/ \;
+          find /tmp/ep03 -name 'sfx*.mp3' -exec cp {} public/sfx/ \;
+          echo "Voiceover count: $(ls public/voiceover | wc -l)"
+          echo "SFX count: $(ls public/sfx | wc -l)"
+          test "$(ls public/voiceover | wc -l)" = "44"
+          test "$(ls public/sfx | wc -l)" = "8"
 
-      - run: npx remotion render src/index.ts TerorFM out/teror-fm-ep02.mp4 --concurrency=2 --disallow-parallel-encoding
+      - run: npx remotion render src/index.ts TerorFM out/teror-fm-ep03.mp4 --concurrency=2 --disallow-parallel-encoding
 
       - uses: actions/upload-artifact@v4
         with:
-          name: teror-fm-ep02
-          path: out/teror-fm-ep02.mp4
+          name: teror-fm-ep03
+          path: out/teror-fm-ep03.mp4
 
       - name: Publish release
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ep02-v1 out/teror-fm-ep02.mp4 --title "TEROR FM EP02 — Halte Terakhir" --notes "Render otomatis dari GitHub Actions." || gh release upload ep02-v1 out/teror-fm-ep02.mp4 --clobber
+          gh release create ep03-v1 out/teror-fm-ep03.mp4 --title "TEROR FM EP03 — Kamar 7" --notes "Render otomatis dari GitHub Actions." || gh release upload ep03-v1 out/teror-fm-ep03.mp4 --clobber
