@@ -67,9 +67,16 @@ Detail tiap shot (posisi, target, FOV, catatan) ada di `src/shots.ts`
 
 - **Babak 1 (0–759):** S1 wide → S3a/S2a/S3b/S2b bergantian Laras–Windu soal
   kopi dingin → SP telepon berdering → S2c Laras mengangkat.
+  Revisi animasi 2026-11-20: S3b Windu minum kopi (gelas krem animasi
+  naik ke mulut 430–593, meringis 514–593), S2b Laras tertawa kecil
+  (kepala miring + mata menyipit 596–714), S2c Laras meraih ke arah mic
+  saat mengangkat (759–860, prop telepon di meja). Revisi ke-2 2026-11-20:
+  gelas S3b dipindah ke sisi kamera (z −0,58, di depan lengan) + emissive
+  krem supaya tidak tertutup lengan dan tidak tenggelam gelap.
 - **Babak 2 (759–3515):** S4 close-up Laras mendengarkan saat Andi bicara,
   S2/S3 OTS saat Laras/Windu bicara. SF lampu berkedip di 2560–2590,
-  sebelum Windu bicara soal lampu (020).
+  sebelum Windu bicara soal lampu (020). Revisi animasi 2026-11-20: S3e
+  Windu menengadah ke lampu (2560–2660, kepala menengadah + pupil ke atas).
 - **Portal P1 (3515–3575):** zoom masuk laptop 60 frame, caption 028 mulai
   30 frame di tengah zoom. Tanpa fade hitam.
 - **Babak 3 POV (3575–6180), satu mode: orang ketiga dekat:**
@@ -79,11 +86,22 @@ Detail tiap shot (posisi, target, FOV, catatan) ada di `src/shots.ts`
   - P2b (4283–5306) kampung siang 19 Nov: seluruh kampung — rumah-rumah,
     jalan, lampu jalan mati, nisan kosong di depan tiap rumah, pintu kebuka,
     tidak ada orang/suara/lampu nyala. Cahaya siang, fog tipis (0,025).
+    Andi BERJALAN di jalan (revisi animasi 2026-11-20): kaki bergantian,
+    lengan mengayun, maju z 1,5 → −1,5.
   - P2c (5306–6180) kuburan malam 19 Nov: seluruh kuburan — gundukan tanah,
     sekop, pagar, pohon, cahaya bulan, lubang kosong, sosok di ujung kuburan.
+    Andi MENGGALI (revisi animasi 2026-11-20): membungkuk, sekop ayun
+    naik-turun (periode 120 frame), gundukan membesar; lalu membeku dan
+    menoleh ke belakang saat dengar suara tanah (5986–6180).
+  - P2a (3575–4283): Andi di motor — kepala tersentak saat ketokan (3545),
+    menoleh ke kaca spion kiri (3823–3979, visor terang + strip helm).
 - **Portal P3 (6180–6240):** zoom keluar 60 frame, caption 043 mulai
   30 frame di tengah zoom.
-- **Babak 4 (6240–6826):** S3g/S2h/S3h/S2i bergantian Windu–Laras,
+- **Babak 4 (6240–6826):** S3g/S2h/S3h/S2i bergantian Windu–Laras
+  (S2i Laras menunjuk laptop, 6517–6579, lengan terulur diagonal + jari
+  menunjuk — revisi animasi 2026-11-20; revisi ke-2 2026-11-20: lengan
+  diangkat menyilang + jari di ruang lokal Host, framing S2i ditarik
+  mundur FOV 27→34 supaya lengan + laptop masuk frame),
   T1 close-up jam laptop 12:01 (6579–6639, hening 60 frame, lampu mati,
   hanya ON AIR merah), T2 wide frontal + judul akhir
   "SIARAN INI BELUM SELESAI" (6639–6826), fade hitam 14 frame terakhir.

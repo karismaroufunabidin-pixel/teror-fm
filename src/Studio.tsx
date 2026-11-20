@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import {useThree} from '@react-three/fiber';
 import {Easing, interpolate, random, useCurrentFrame} from 'remotion';
 import {Box, Blocks, jitter, type BlockItem} from './Voxel';
-import {BLACKOUT_START, TURN_LARAS, TURN_WINDU, getCamera, getShot, isPov, isPovDay, lightLevel, mouthOpen, povScene, type V3} from './shots';
+import {BLACKOUT_START, CAPTIONS, TURN_LARAS, TURN_WINDU, getCamera, getShot, isPov, isPovDay, lightLevel, mouthOpen, povScene, type V3} from './shots';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
@@ -245,9 +245,13 @@ const Table: React.FC = () => {
         <Box size={[0.9, 0.7, 0.6]} color="#15161a" />
         <Box pos={[0, 0.02, 0.31]} size={[0.7, 0.5, 0.02]} color="#1b7a52" emissive="#1fe08a" ei={0.8 * crt} cast={false} />
       </group>
-      {/* gelas */}
+      {/* gelas Laras (statis). Gelas Windu TIDAK di sini lagi: dia gelas
+          animasi (AnimatedCup) yang menempel di tangan Windu saat minum,
+          supaya tidak ada dua gelas sekaligus. */}
       <Box pos={[0.2, 1.4, 1.2]} size={[0.16, 0.2, 0.16]} color="#2a2a30" />
-      <Box pos={[-0.25, 1.4, 0.8]} size={[0.16, 0.2, 0.16]} color="#3a1f1f" />
+      {/* telepon studio di dekat Laras: Laras mengangkatnya di 759-860 */}
+      <Box pos={[0.85, 1.34, 0.5]} size={[0.32, 0.06, 0.22]} color="#3a3f48" />
+      <Box pos={[0.85, 1.4, 0.5]} size={[0.28, 0.05, 0.08]} color="#d8d8d8" />
       {/* kertas naskah */}
       <Box pos={[-0.2, 1.31, 0.2]} size={[0.5, 0.01, 0.35]} color="#bdb6a4" rot={[0, 0.3, 0]} cast={false} />
     </group>
@@ -341,6 +345,42 @@ const Laptop: React.FC = () => {
 };
 
 // ---------------------------------------------------------------------------
+// Gelas kopi Windu (animasi, BUKAN prop statis di Table).
+// Jendela minum 430-593: angkat 430-480, tahan di mulut 480-515,
+// turun kembali ke meja 515-593. Di frame ~480 gelas HARUS di depan
+// mulut Windu (world ~[-1.32, 1.98, -0.08]), bukan di meja.
+// ---------------------------------------------------------------------------
+
+const AnimatedCup: React.FC = () => {
+  const frame = useCurrentFrame();
+  const drinkT = interpolate(frame, [430, 480, 515, 593], [0, 1, 1, 0], {
+    ...clamp,
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const rest: V3 = [-0.95, 1.42, -0.45];
+  // Revisi ke-2 (2026-11-20): gelas lama di z -0.05 TERTUTUP lengan
+  // (lengan minum ada di z -0.48, di antara kamera S3b di z -0.85 dan
+  // gelas) — yang terlihat hanya balok gelap lengan + strip putih.
+  // Gelas sekarang di z -0.58, DI DEPAN lengan dari sudut kamera S3b,
+  // dan digeser ke samping mulut (mulut di z 0, gelas di z -0.58) supaya
+  // mulut + dagu Windu tetap terlihat di samping gelas. Gelas dikecilkan
+  // sedikit (0.26) dan diberi emissive krem supaya tidak tenggelam gelap.
+  const mouth: V3 = [-1.02, 1.96, -0.58];
+  const pos: V3 = [
+    rest[0] + (mouth[0] - rest[0]) * drinkT,
+    rest[1] + (mouth[1] - rest[1]) * drinkT,
+    rest[2] + (mouth[2] - rest[2]) * drinkT,
+  ];
+  return (
+    <group position={pos} rotation={[0.15 * drinkT, 0, -0.5 * drinkT]}>
+      <Box size={[0.26, 0.34, 0.26]} color="#f7efdd" emissive="#fff2cf" ei={1.1} />
+      <Box pos={[0, 0.18, 0]} size={[0.22, 0.02, 0.22]} color="#2a160e" cast={false} />
+      <Box pos={[0.15, 0, 0]} size={[0.05, 0.16, 0.05]} color="#f7efdd" emissive="#fff2cf" ei={0.8} cast={false} />
+    </group>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Penyiar (karakter blocky)
 // ---------------------------------------------------------------------------
 
@@ -372,9 +412,45 @@ const Host: React.FC<{role: 'A' | 'B'}> = ({role}) => {
     easing: Easing.inOut(Easing.cubic),
   });
   const idle = Math.sin(frame * 0.045 + (isA ? 0 : 2)) * 0.07 * (1 - turnT);
-  const headY = (isA ? -1 : 1) * turnT * 1.45 + idle;
-  const headZ = (isA ? 1 : -1) * turnT * 0.2;
-  const nod = amp * 0.05 * Math.sin(frame * 0.5) + Math.sin(frame * 0.07) * 0.015;
+
+  // --- Jendela animasi (satu aksi = satu jendela naik-tahan-turun) ---
+  const env = (a: number, b: number, c: number, d: number) =>
+    interpolate(frame, [a, b, c, d], [0, 1, 1, 0], {...clamp, easing: Easing.inOut(Easing.cubic)});
+  // Windu minum kopi 430-593 (gelas di mulut ~480), meringis 514-593
+  const drinkT = isA ? env(430, 480, 515, 593) : 0;
+  const grimT = isA ? env(514, 530, 575, 593) : 0;
+  // Laras tertawa kecil 596-714
+  const laughT = !isA ? env(596, 620, 690, 714) : 0;
+  // Windu menengadah ke lampu berkedip 2560-2660
+  const lookUpT = isA ? env(2560, 2585, 2640, 2660) : 0;
+  // Laras mengangkat telepon 759-860
+  const phoneT = !isA ? env(759, 790, 830, 860) : 0;
+  // Laras menunjuk laptop 6517-6579
+  const pointT = !isA ? env(6517, 6540, 6579, 6620) : 0;
+  // Windu kaget "hari ini?" 3344-3375: mundur sedikit
+  const recoilT = isA ? env(3344, 3360, 3380, 3420) : 0;
+  // Windu menunduk saat telepon putus 6432-6514, tangan ke headset
+  const slumpT = isA ? env(6432, 6460, 6500, 6517) : 0;
+  // Pendengar mencondongkan badan saat penelpon bicara di studio
+  const penCap = CAPTIONS.find((x) => x.who === 'PENELPON' && frame >= x.from && frame <= x.to);
+  const listenT = penCap && frame < 3515
+    ? interpolate(frame, [penCap.from, penCap.from + 15, penCap.to - 15, penCap.to], [0, 1, 1, 0], clamp)
+    : 0;
+
+  const headPitchExtra =
+    -0.18 * grimT - 0.65 * lookUpT + 0.28 * slumpT - 0.12 * recoilT + 0.1 * phoneT;
+  const headYawExtra = 0.35 * pointT + 0.2 * phoneT;
+  const headY = (isA ? -1 : 1) * turnT * 1.45 + idle + headYawExtra;
+  const headZ = (isA ? 1 : -1) * turnT * 0.2 + 0.14 * laughT;
+  const nod =
+    amp * 0.05 * Math.sin(frame * 0.5) +
+    Math.sin(frame * 0.07) * 0.015 +
+    headPitchExtra +
+    0.03 * Math.sin(frame * 0.12) * listenT;
+  // Mata menyipit saat meringis / tertawa (beda dari mata melebar takut)
+  const squintY = 1 - 0.55 * grimT - 0.5 * laughT;
+  const browGrim = grimT * 0.3;
+  const browLaugh = laughT * 0.15;
 
   // Windu: mata melebar saat nisan Andi disebut (2776-2968) dan saat telepon putus.
   // Laras: jarang takut — hanya melebar 1.3x saat jam 12:01 terlihat.
@@ -382,7 +458,7 @@ const Host: React.FC<{role: 'A' | 'B'}> = ({role}) => {
     ? interpolate(frame, [3089, 3140, 3515, 3600, 6432, 6579], [1, 1.75, 1.75, 1, 1, 1.75], clamp)
     : interpolate(frame, [6579, 6639], [1, 1.3], clamp);
   const pupil = 1 - 0.5 * ((widen - 1) / 0.75);
-  const blink = widen < 1.3 && (frame + (isA ? 0 : 41)) % 97 < 3 ? 0.12 : 1;
+  const blink = widen < 1.3 && lookUpT < 0.5 && (frame + (isA ? 0 : 41)) % 97 < 3 ? 0.12 : 1;
   const breath = 1 + Math.sin(frame * 0.1 + (isA ? 0 : 1)) * 0.012;
 
   const px = (isA ? 1 : 1) * 0.07; // arah pupil ke lawan bicara
@@ -409,20 +485,75 @@ const Host: React.FC<{role: 'A' | 'B'}> = ({role}) => {
         </group>
       ))}
 
-      {/* badan */}
-      <group position={[0, 0, 0]} scale={[1, breath, 1]}>
+      {/* badan: mencondong ke depan saat mendengarkan, menunduk saat
+          telepon putus, mundur sedikit saat kaget, bahu bergetar saat tertawa */}
+      <group
+        position={[0, -0.05 * slumpT + 0.03 * Math.sin(frame * 0.9) * laughT, 0.07 * listenT - 0.08 * recoilT - 0.1 * lookUpT]}
+        scale={[1, breath, 1]}
+      >
         <Box pos={[0, 1.38, 0]} size={[0.64, 0.96, 0.32]} color={look.shirt} />
         {/* aksen kerah / logo */}
         <Box pos={[0, 1.7, 0.17]} size={[0.3, 0.06, 0.02]} color={isA ? '#3b6f73' : '#6a4a86'} cast={false} />
       </group>
 
-      {/* lengan di atas meja */}
-      {([-0.48, 0.48] as number[]).map((ax) => (
-        <group key={ax} position={[ax, 1.74, 0]} rotation={[-1.1, 0, 0]}>
-          <Box pos={[0, -0.48, 0]} size={[0.32, 0.96, 0.32]} color={look.shirt} />
-          <Box pos={[0, -0.9, 0]} size={[0.32, 0.18, 0.32]} color={look.skin} />
-        </group>
-      ))}
+      {/* lengan: satu lengan per aksi, lengan satunya tetap di meja.
+          ax +0.48 = sisi dekat kamera di shot OTS masing-masing.
+          Windu minum: lengan +0.48 terangkat ke mulut (430-593).
+          Laras telepon: lengan +0.48 meraih telepon (759-860).
+          Laras menunjuk laptop: lengan +0.48 terulur lurus (6517-6579).
+          Windu headset: lengan -0.48 naik ke telinga saat telepon putus. */}
+      {([-0.48, 0.48] as number[]).map((ax) => {
+        const isDrinkArm = isA && ax === 0.48;
+        const isHeadsetArm = isA && ax === -0.48;
+        const isPhoneArm = !isA && ax === 0.48;
+        // Revisi ke-2 (2026-11-20): lengan menunjuk Laras lama (rx -1.52,
+        // rz -0.5) menunjuk lurus ke arah kamera OTS — terpotong jadi stub
+        // di tepi frame, jari nyaris tak terlihat. Sekarang lengan diangkat
+        // lebih tinggi (rx -1.85, tangan setinggi mulut/dagu) dan diayun
+        // menyilang ke sisi kamera (rz -0.85) supaya panjang lengan terbaca
+        // diagonal di frame, jari menunjuk ke bawah-tengah (arah laptop).
+        const rx =
+          -1.1 +
+          (isDrinkArm ? -0.75 * drinkT : 0) +
+          (isPhoneArm ? -0.5 * phoneT - 0.75 * pointT : 0) +
+          (isHeadsetArm ? -1.0 * slumpT : 0);
+        const rz =
+          (isDrinkArm ? -0.55 * drinkT : 0) +
+          (isPhoneArm ? -0.85 * pointT - 0.3 * phoneT : 0) +
+          (isHeadsetArm ? 0.5 * slumpT : 0);
+        // Lengan minum Windu: baju teal dibuat lebih terang saat terangkat
+        // supaya tidak terbaca sebagai balok hitam besar di depan wajah.
+        const sleeveColor = isDrinkArm ? '#4a7d84' : look.shirt;
+        return (
+          <group key={ax} position={[ax, 1.74, 0]} rotation={[rx, 0, rz]}>
+            <Box pos={[0, -0.48, 0]} size={[0.32, 0.96, 0.32]} color={sleeveColor} />
+            <Box
+              pos={[0, -0.9, 0]}
+              size={isDrinkArm ? [0.36, 0.22, 0.36] : [0.32, 0.18, 0.32]}
+              color={look.skin}
+              emissive={isPhoneArm && pointT > 0.01 ? look.skin : undefined}
+              ei={0.4}
+            />
+          </group>
+        );
+      })}
+
+      {/* Jari menunjuk Laras — BUKAN di dalam grup lengan (rotasi lengan
+          rx -1.85 membuat jari di dalam grup menunjuk KE ATAS di samping
+          wajah, bukan ke laptop). Jari ini dirender di ruang lokal Host,
+          sumbu panjang di +z lokal = arah laptop, setinggi mulut/dagu,
+          muncul dari tangan di ujung lengan menunjuk. */}
+      {!isA && pointT > 0.01 && (
+        <Box
+          pos={[-0.35, 1.86, 0.82]}
+          size={[0.2, 0.2, 0.55]}
+          color={look.skin}
+          emissive={look.skin}
+          ei={0.6}
+          rot={[0.45, 0, 0]}
+          cast={false}
+        />
+      )}
 
       {/* kepala */}
       <group position={[0, 1.86, 0]} rotation={[nod, headY, headZ]}>
@@ -455,13 +586,13 @@ const Host: React.FC<{role: 'A' | 'B'}> = ({role}) => {
         ))}
         {/* wajah */}
         {eyeX.slice(0, 2).map((ex, i) => (
-          <group key={i} position={[ex, 0.38, 0.325]} scale={[widen, widen * blink, 1]}>
+          <group key={i} position={[ex, 0.38, 0.325]} scale={[widen, widen * blink * squintY, 1]}>
             <Box size={[0.14, 0.1, 0.02]} color="#e8e8ea" cast={false} />
-            <Box pos={[px * (i === 0 ? 1 : 1) * 0.5, 0, 0.012]} size={[0.07 * pupil, 0.08 * pupil, 0.02]} color="#0b0b10" cast={false} />
+            <Box pos={[px * (i === 0 ? 1 : 1) * 0.5, 0.025 * lookUpT, 0.012]} size={[0.07 * pupil, 0.08 * pupil, 0.02]} color="#0b0b10" cast={false} />
           </group>
         ))}
-        <Box pos={[-0.15, 0.47, 0.325]} size={[0.17, 0.03, 0.02]} color={hair} cast={false} rot={[0, 0, widen > 1.3 ? 0.25 : 0]} />
-        <Box pos={[0.15, 0.47, 0.325]} size={[0.17, 0.03, 0.02]} color={hair} cast={false} rot={[0, 0, widen > 1.3 ? -0.25 : 0]} />
+        <Box pos={[-0.15, 0.47, 0.325]} size={[0.17, 0.03, 0.02]} color={hair} cast={false} rot={[0, 0, (widen > 1.3 ? 0.25 : 0) + browGrim - browLaugh]} />
+        <Box pos={[0.15, 0.47, 0.325]} size={[0.17, 0.03, 0.02]} color={hair} cast={false} rot={[0, 0, (widen > 1.3 ? -0.25 : 0) - browGrim + browLaugh]} />
         <Box pos={[0, 0.27, 0.34]} size={[0.1, 0.1, 0.06]} color={isA ? '#a8714e' : '#c79b82'} cast={false} />
         <Box
           pos={[0, 0.13, 0.325]}
@@ -533,6 +664,30 @@ const PovScene: React.FC = () => {
   const inP2b = scene === 'p2b';
   const inP2c = scene === 'p2c';
   const houseZ = [4.5, 1.5, -1.5];
+  // --- Animasi Andi (POV) ---
+  // Ketokan helm 3545: tersentak. Lirik spion 3823-3979: kepala menoleh.
+  const knockT = interpolate(frame, [3545, 3560, 3590, 3620], [0, 1, 1, 0], clamp);
+  const mirrorT = interpolate(frame, [3823, 3860, 3940, 3979], [0, 1, 1, 0], {
+    ...clamp,
+    easing: Easing.inOut(Easing.cubic),
+  });
+  // Andi berjalan di kampung siang 4283-5306: maju dari z 3.8 ke 0.2
+  const walkZ = interpolate(frame, [4283, 5306], [1.5, -1.5], clamp);
+  const walkPh = Math.sin(frame * 0.28);
+  // Andi menggali 5451-5829: ayunan sekop, berhenti saat dengar suara tanah
+  const digT =
+    interpolate(frame, [5451, 5480], [0, 1], clamp) *
+    (1 - interpolate(frame, [5986, 6010], [0, 1], clamp));
+  // Periode 120 frame (3,15 ayunan dalam 5451-5829); di 5650 ayunan
+  // di bawah, di 5750 di tengah/atas — posisi sekop harus beda jelas.
+  const swingPh = Math.sin((frame - 5451) * 0.0524);
+  const moundG = interpolate(frame, [5451, 5829], [0, 1], clamp);
+  // Andi membeku lalu menoleh ke belakang 5986-6180
+  const turnT2 = interpolate(frame, [6010, 6100], [0, 1], {
+    ...clamp,
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const eyeWidenPov = 1 + 0.8 * interpolate(frame, [6060, 6120], [0, 1], clamp);
   return (
     <group>
       {/* tanah + jalan */}
@@ -600,11 +755,41 @@ const PovScene: React.FC = () => {
         [-0.1, 0.3, -3.4],
         [0.55, 0.12, -3.3],
       ] as V3[]).map((pp, i) => (
-        <Box key={i} pos={pp} size={[0.5, 0.25, 0.4]} color="#3a2a1a" />
+        <Box key={i} pos={pp} size={[0.5, 0.25, 0.4]} color="#3a2a1a" scale={[1 + 0.35 * moundG, 1 + 0.25 * moundG, 1 + 0.35 * moundG]} />
       ))}
-      {/* sekop bersandar di gundukan */}
-      <Box pos={[0.9, 0.5, -2.0]} size={[0.06, 1.0, 0.06]} color="#4a3427" rot={[0, 0, 0.35]} />
-      <Box pos={[1.05, 0.95, -2.0]} size={[0.22, 0.3, 0.04]} color="#6a6f78" rot={[0, 0, 0.35]} />
+      {/* Andi menggali (P2c): sekop BERGERAK naik-turun, bukan bersandar.
+          Ayunan: periode ~60 frame, posisi sekop di 5650 vs 5750 berbeda jelas. */}
+      {inP2c && (
+        <group position={[0.45, 1.15, -2.1]} rotation={[-0.5 + 0.8 * swingPh * digT, 0, 0]}>
+          <Box pos={[0, -0.55, 0]} size={[0.07, 1.3, 0.07]} color="#6a4a2f" />
+          <Box pos={[0, -1.25, 0]} size={[0.3, 0.4, 0.05]} color="#9aa0aa" />
+        </group>
+      )}
+      {/* Andi di kuburan (P2c): membungkuk menggali, lalu membeku dan
+          menoleh ke belakang saat dengar suara tanah (5986-6180). */}
+      {inP2c && (
+        <group position={[0.1, 0, -1.6]} rotation={[-0.08 * digT, Math.PI * turnT2, 0]}>
+          {([-0.14, 0.14] as number[]).map((lx) => (
+            <Box key={lx} pos={[lx, 0.45, 0]} size={[0.2, 0.9, 0.2]} color="#14161d" />
+          ))}
+          <group position={[0, 0.95, 0]} rotation={[-(0.5 + 0.2 * swingPh * digT) * (1 - turnT2), 0, 0]}>
+            <Box pos={[0, 0.35, 0]} size={[0.55, 0.6, 0.3]} color="#1d4a22" />
+            {([-0.32, 0.32] as number[]).map((ax) => (
+              <group key={ax} position={[ax, 0.55, 0]} rotation={[-1.15 + 0.35 * swingPh * digT, 0, 0]}>
+                <Box pos={[0, -0.3, 0]} size={[0.14, 0.6, 0.14]} color="#1d4a22" />
+                <Box pos={[0, -0.62, 0]} size={[0.13, 0.14, 0.13]} color="#8a6a4a" />
+              </group>
+            ))}
+            <group position={[0, 0.78, 0]}>
+              <Box size={[0.4, 0.4, 0.4]} color="#22242a" />
+              <Box pos={[0, 0, -0.21]} size={[0.34, 0.12, 0.06]} color="#0a0a0c" cast={false} />
+              {([-0.09, 0.09] as number[]).map((ex) => (
+                <Box key={ex} pos={[ex, 0.05, -0.25]} size={[0.09, 0.06, 0.02]} color="#ffffff" basic fog={false} cast={false} scale={[1, eyeWidenPov, 1]} />
+              ))}
+            </group>
+          </group>
+        </group>
+      )}
       {/* motor Andi: setang + lampu depan — hanya P2a (di P2b/P2c Andi jalan kaki) */}
       {inP2a && (
       <group position={[0, 0, 2.0]}>
@@ -612,16 +797,44 @@ const PovScene: React.FC = () => {
         <Box pos={[0, 0.55, -0.3]} size={[0.5, 0.7, 1.1]} color="#1d4a22" />
         <Box pos={[0, 0.75, -0.85]} size={[0.3, 0.2, 0.06]} color="#ffe9b0" emissive="#ffdf8a" ei={2.5} cast={false} />
         <Box pos={[0, 0.25, 0.3]} size={[0.4, 0.5, 0.4]} color="#0b0b0d" />
+        {/* kaca spion kiri: Andi melirik ke sini di 3823-3979 */}
+        <Box pos={[-0.5, 1.32, 0.05]} size={[0.1, 0.2, 0.03]} color="#9aa0aa" cast={false} />
+        <Box pos={[-0.48, 1.18, 0.05]} size={[0.04, 0.16, 0.04]} color="#0b0b0d" cast={false} />
       </group>
       )}
-      {/* Andi di atas motor (P2a, orang ketiga dekat): jaket ojol hijau redup + helm */}
+      {/* Andi di atas motor (P2a, orang ketiga dekat): jaket ojol hijau redup + helm.
+          Kepala terpisah: tersentak saat ketokan (3545), menoleh ke spion (3823-3979). */}
       {inP2a && (
-        <group position={[0, 0, 2.0]}>
+        <group position={[0, 0, 2.0 + 0.12 * knockT]}>
           <Box pos={[0, 1.25, 0.35]} size={[0.55, 0.6, 0.3]} color="#1d4a22" />
-          <Box pos={[0, 1.75, 0.35]} size={[0.4, 0.4, 0.4]} color="#22242a" />
-          <Box pos={[0, 1.75, 0.14]} size={[0.34, 0.12, 0.06]} color="#0a0a0c" cast={false} />
+          <group position={[0, 1.75, 0.35]} rotation={[0.25 * knockT - 0.05 * mirrorT, -1.25 * mirrorT, 0.12 * mirrorT]}>
+            <Box size={[0.4, 0.4, 0.4]} color="#22242a" />
+            <Box pos={[0, 0, -0.21]} size={[0.34, 0.12, 0.06]} color="#9aa0aa" cast={false} />
+            <Box pos={[0, 0.21, 0]} size={[0.42, 0.03, 0.2]} color="#8a8f98" cast={false} />
+          </group>
           <Box pos={[-0.32, 1.3, 0.35]} size={[0.14, 0.5, 0.14]} color="#1d4a22" />
           <Box pos={[0.32, 1.3, 0.35]} size={[0.14, 0.5, 0.14]} color="#1d4a22" />
+        </group>
+      )}
+      {/* Andi berjalan di kampung siang (P2b): kaki bergantian, lengan
+          mengayun, badan maju dari z 3.8 ke 0.2. Bukan melayang statis. */}
+      {inP2b && (
+        <group position={[0, 0.04 * Math.abs(walkPh), walkZ]} rotation={[0, 0, 0.06 * walkPh]}>
+          <Box pos={[0, 1.25, 0]} size={[0.55, 0.6, 0.3]} color="#1d4a22" />
+          <group position={[0, 1.75, 0]}>
+            <Box size={[0.4, 0.4, 0.4]} color="#22242a" />
+            <Box pos={[0, 0, -0.21]} size={[0.34, 0.12, 0.06]} color="#0a0a0c" cast={false} />
+          </group>
+          {([-0.12, 0.12] as number[]).map((lx, i) => (
+            <group key={lx} position={[lx, 0.85 + 0.14 * Math.max(0, (i === 0 ? 1 : -1) * walkPh), 0]} rotation={[(i === 0 ? 1 : -1) * 0.7 * walkPh, 0, 0]}>
+              <Box pos={[0, -0.4, 0]} size={[0.18, 0.85, 0.18]} color="#14161d" />
+            </group>
+          ))}
+          {([-0.32, 0.32] as number[]).map((ax, i) => (
+            <group key={ax} position={[ax, 1.45, 0]} rotation={[(i === 0 ? -1 : 1) * 0.5 * walkPh, 0, 0]}>
+              <Box pos={[0, -0.35, 0]} size={[0.14, 0.7, 0.14]} color="#1d4a22" />
+            </group>
+          ))}
         </group>
       )}
       {/* sosok tanpa wajah: duduk di belakang Andi di motor (P2a).
@@ -813,6 +1026,7 @@ export const Scene: React.FC = () => {
           <OnAirSign />
           <Table />
           <Laptop />
+          <AnimatedCup />
           <MicArm side={1} />
           <MicArm side={-1} />
           <Host role="A" />
