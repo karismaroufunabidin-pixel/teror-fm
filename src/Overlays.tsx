@@ -133,7 +133,7 @@ export const Overlays: React.FC = () => {
       {titleOpacity > 0 && (
         <AbsoluteFill style={{justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 230}}>
           <div style={{fontFamily: FONT, fontWeight: 900, fontSize: 40, letterSpacing: 4, color: '#ff2a1f', opacity: titleOpacity, textShadow: '0 0 24px #ff1208, 4px 4px 0 #000', textAlign: 'center', maxWidth: '92%'}}>
-            BUS TERAKHIR TIDAK PERNAH SAMPAI
+            KAMAR 7 SUDAH ADA PENGHUNINYA
           </div>
         </AbsoluteFill>
       )}

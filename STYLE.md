@@ -1,11 +1,11 @@
-# TEROR FM EP01v2 — Kuburan Kosong (Remake) — STYLE
+# TEROR FM EP03 — Kamar 7 — STYLE
 
 Gaya visual TEROR FM, sumber `~/workspace/teror-fm/style.md` dan
 `~/workspace/horror-studio/STYLE.md`. Jangan ubah gaya ini.
 
 ## Format
 
-- 9:16 vertikal, 1080x1920, 30 fps. Durasi 6826 frame / 227,53 detik
+- 9:16 vertikal, 1080x1920, 30 fps. Durasi 6806 frame / 226,87 detik
   (dari audio terukur, L12).
 - Full via kode: Remotion 4.0.545 + @remotion/three + three.js.
   Jangan buat dari create image. Jangan pakai gambar AI.
